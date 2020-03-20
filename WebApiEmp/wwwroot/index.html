@@ -1,0 +1,188 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Список пользователей</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+    <h2>Список пользователей</h2>
+    <form name="employeeForm">
+        <input type="hidden" name="id" value="0" />
+        <div class="form-group col-md-5">
+            <label for="firstname">Имя:</label>
+            <input class="form-control" name="firstname" />
+        </div>
+        <div class="form-group col-md-5">
+            <label for="lastname">Фамилия:</label>
+            <input class="form-control" name="lastname" />
+        </div>
+        <div class="form-group col-md-5">
+            <label for="age">Возраст:</label>
+            <input class="form-control" name="age" type="number" />
+        </div>
+        <div class="panel-body">
+            <button type="submit" id="submit" class="btn btn-primary">Сохранить</button>
+            <a id="reset" class="btn btn-primary">Сбросить</a>
+        </div>
+    </form>
+    <table class="table table-condensed table-striped  col-md-6">
+        <thead><tr><th>Id</th><th>Имя</th><th>Фамилия</th><th>Возраст</th><th></th></tr></thead>
+        <tbody>
+        </tbody>
+    </table>
+    <div>2020</div>
+    <script>
+        async function GetEmployees() {
+            const response = await fetch("/employee", {
+                method: "GET",
+                headers: { "Accept": "application/json", "ContentType": "application/json; charset=utf-8" }
+            });
+            if (response.ok === true) {
+                const employees = await response.json(); 
+                let rows = document.querySelector("tBody");
+                employees.forEach(employee => {
+                    rows.append(row(employee));
+                });
+            }
+        }
+
+        async function GetEmployee(id) {
+            const response = await fetch("/employee/" + id, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const employee = await response.json();
+                const form = document.forms["employeeForm"];
+                form.elements["id"].value = employee.id;
+                form.elements["firstname"].value = employee.firstname;
+                form.elements["lastname"].value = employee.lastname;
+                form.elements["age"].value = employee.age;
+            }
+        }
+
+        async function AddEmployee(empFirstName, empLastName, empAge) {
+            const response = await fetch("/employee", {
+                method: "POST",
+                headers: { "Accept": "application/json", "ContentType": "application/json" },
+                body: JSON.stringify({
+                    firstname: empFirstName,
+                    lastname: empLastName,
+                    age: parseInt(empAge, 10)
+                })
+            });
+            if (response.ok === true) {
+                const employee = response.json();
+                reset();
+                document.querySelector("tBody").append(row(employee));
+            }
+        }
+
+        async function EditEmployee(empId, empFirstName, empLastName, empAge) {
+            const response = await fetch("/employee", {
+                method: "PUT",
+                headers: { "Accept": "application/json", "ContentType": "application/json" },
+                body: JSON.stringify({
+                    id: parseInt(empId, 10),
+                    firstname: empFirstName,
+                    lastname: empLastName,
+                    age: parseInt(empAge, 10)
+                })
+            });
+            if (response.ok === true) {
+                const employee = response.json();
+                document.querySelector("tr[data-rowid='" + employee.id + "']").replaceWith(row(employee));
+            }
+        }
+
+        async function DeleteEmployee(id) {
+            const response = await fetch("/employee/" + id, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const employee = request.json();
+                document.querySelector("tr[data-rowid='" + employee.id + "']").remove();
+            }
+        }
+
+        function reset() {
+            const form = document.forms["employeeForm"];
+            form.reset();
+            form.elements["id"].value = 0;
+        }
+
+        function row(employee) {
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", employee.id);
+
+            const idTd = document.createElement("td");
+            idTd.append(employee.id);
+            tr.append(idTd);
+
+            const firstnameTd = document.createElement("td");
+            firstnameTd.append(employee.firstname);
+            tr.append(firstnameTd);
+
+            const lastnameTd = document.createElement("td");
+            lastnameTd.append(employee.lastname);
+            tr.append(lastnameTd);
+
+            const ageTd = document.createElement("td");
+            ageTd.append(employee.age);
+            tr.append(ageTd);
+
+            const linksTd = document.createElement("td");
+
+            const editLink = document.createElement("a");
+            editLink.setAttribute("data-id", employee.id);
+            editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            editLink.append("Изменить");
+            editLink.addEventListener("click", e => {
+ 
+                e.preventDefault();
+                GetEmployee(employee.id);
+            });
+            linksTd.append(editLink);
+
+            const removeLink = document.createElement("a");
+            removeLink.setAttribute("data-id", employee.id);
+            removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            removeLink.append("Удалить");
+            removeLink.addEventListener("click", e => {
+ 
+                e.preventDefault();
+                DeleteEmployee(employee.id);
+            });
+ 
+            linksTd.append(removeLink);
+            tr.appendChild(linksTd);
+ 
+            return tr;
+        }
+
+        document.getElementById("reset").click(function (e) {
+ 
+            e.preventDefault();
+            reset();
+        })
+
+        document.forms["employeeForm"].addEventListener("submit", e => {
+            e.preventDefault();
+            const form = document.forms["employeeForm"];
+            const id = form.elements["id"].value;
+            const firstname = form.elements["firstname"].value;
+            const lastname = form.elements["lastname"].value;
+            const age = form.elements["age"].value;
+            if (id == 0)
+                AddEmployee(firstname, lastname, age);
+            else
+                EditEmployee(id, firstname, lastname, age);
+        });
+ 
+        GetEmployees();
+    </script>
+</body>
+</html>
